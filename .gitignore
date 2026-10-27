@@ -1,0 +1,22 @@
+# 编译产物
+build/
+.gradle/
+.idea/
+local.properties
+*.apk
+*.jar
+*.dex
+*.class
+
+# 抓包与镜像（含个人鉴权 / 体积巨大）
+*.pcap
+*.img
+*.bin
+*.tar
+*.gz
+
+# 缓存
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

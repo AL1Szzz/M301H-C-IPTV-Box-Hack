@@ -1,0 +1,341 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<META HTTP-EQUIV="pragma" CONTENT="no-cache">
+<META HTTP-EQUIV="Cache-Control" CONTENT="no-cache, must-revalidate">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>GM220-S</title>
+<LINK REL="stylesheet" HREF="/css/login.css" TYPE="text/css" />
+<LINK REL="stylesheet" HREF="/css/stylech.css" TYPE="text/css" />
+<!-- <link rel="stylesheet" href="css/ulogin.css" TYPE="text/css" /> -->
+<link rel="stylesheet" href="/css/user_login.css" />
+<script type="text/javascript" src="library/jsencrypt.js"></script>
+<script>
+
+function getObj(id)
+{
+return(document.getElementById(id));
+}
+var SetTFlag = 0;
+var maxtime;
+var interval;
+
+var firstflag = 1;
+function setTime()
+{
+
+times = parseInt(63877,10);
+timestamp = parseInt(63877,10);
+if(1 == firstflag)
+{
+if(times + 60 > timestamp)
+{
+maxtime = Math.min(60, times + 60 - timestamp);
+}
+else
+{
+maxtime = 0;
+}
+}
+if(maxtime>=0)
+{
+seconds = maxtime;
+getObj("time").innerHTML=seconds+"秒";
+if (maxtime == 0)
+{
+setDisable();
+SetTFlag =0;
+if(interval)
+{
+clearInterval(interval);
+interval = 0;
+}
+}
+else
+{
+--maxtime;
+SetTFlag = 1;
+firstflag = 0;
+}
+}
+}
+function setinner(type)
+{
+if (SetTFlag ==0)
+{
+getObj("myLayer").style.visibility = type ;
+}
+}
+function Transfer_meaning(id,value)
+{
+getObj(id).value=value;
+}
+</script>
+</head>
+<body onload="onFocus();">
+<div id="container">
+<div id="myLayer" onmousedown="setinner('hidden')" style="position:absolute; width:185px; height:91px; z-index:9; left: 50%; margin-left: 155px; top: 35%; background: url(img/pop_up.gif) no-repeat; border: 1px none #000000; visibility: hidden;">
+<div id="Layer1" style="position:absolute; width:180px; height:45px; z-index:10; left: 2px; top: 28px;">
+<table width="183" border="0">
+<tr>
+<td width="183">&nbsp;&nbsp;<font id="errmsg" class="notecontent" ></font><span id="time" style="color:red;display:none;"></span></td>
+</tr>
+</table>
+</div>
+<div id="Layer3" style="position:absolute; width:140px; height:10px; z-index:11; left: 34px; top: 9px; font-size: 8pt;">
+<font  class="note" id="errnote">&nbsp;错误信息</font>
+</div>
+</div>
+<div id="head" style="display:none">
+<div class="type"><font id="">GM220-S</font></div>
+<div id="banner" style="background-image:url(img/bg.png); background-repeat:no-repeat"></div>
+</div>
+<!--
+<div id="MAIN_DIV_top">
+</div>
+-->
+
+
+<div class="CLS_pageContent">
+<div  class="CLS_formTable">
+<!--<p class="CLS_formTableHeader">欢迎使用中国移动智能网关</p>-->
+<div class="login-form">
+<div class="transbox1">
+<div style="position: relative;left:125px;top: 100px;">
+<!--
+<span><img src="img/erweima.jpg" alt=""/></span>
+-->
+<span><img src="img/login_CMCC_QRCode.png" alt=""/></span>
+<p style="position: relative;left: 15px;top: 10px;">下载手机客户端</p>
+</div>
+</div>
+<div class="transbox">
+<div class="log1" style="border-left: 3px solid white;">
+<img src="img/china-mobile.jpg" alt=""/>
+</div>
+<!--
+<div class="log2">
+<img src="img/china-mobile-logo.png" alt=""/>
+</div>
+-->
+<div class="login-top">
+<form name="fLogin" id="fLogin" method="post" onsubmit="return false;" action="">
+<input type="hidden" name="_lang" id="_lang" value="" disabled>
+<input type="hidden" name="frashnum" id="frashnum" value="">
+<input type="hidden" name="action" id="action" value="login">
+<input type="hidden" name="Frm_Logintoken" id="Frm_Logintoken" value="">
+<div class="login-ic">
+<i ></i>
+<input type="text"  name="username" id="username" placeholder="用户名" />
+<!-- <input name="username" id="username"  value="useradmin" type="text" onFocus="this.value = '';" onBlur="if (this.value == '') {this.value = 'User name';}/>-->
+<div class="clear"> </div>
+</div>
+<div class="login-ic">
+<i class="icon"></i>
+<input type="password" id="logincode"  placeholder="密码" autocomplete="off"/>
+<!--<input name="Password" id="password"  type="password" value="密码" onFocus="this.value = '';" onBlur="if (this.value == '') {this.value = 'password';}"/>-->
+<input id="usr2" type="text" size="12"  name="usr"  style="width:170px; display:none">
+<span class="bt-showpwd" id="showpwd" onclick="showpassword()" style="display:none"></span>
+<span class="bt-showpwd-off" id="showpwdoff" onclick="showpassword()"></span>
+<input type="text" name="ieversion" id="ieversion" style="visibility: hidden;display:none"  value="1"/>
+<div class="clear"> </div>
+</div>
+<div class="log-bwn">
+<!-- <input id="LoginId" type="submit"  value="登录" > -->
+<input type="button" id="LoginId" value="登录" onclick="dosubmit()" style="font-size: 15px;font-weight: 700;color: #fff;padding: 13px 0;background: #1d7e47;display: inline-block;width: 100%;outline: none;border: 2px solid #13931e;cursor: pointer;text-transform: uppercase;"/>
+</div>
+</form>
+<div class="regeist">
+<tr>
+<td>
+<font color="white"><b>安装人员</b></font>
+</td>
+<td>
+<a onclick="gotoRegister()" style="color:white;cursor:pointer;"><font color="#008FE4"><b>注册安装</b></font></a>
+<!-- <p2>注册安装</p2>-->
+</td>
+</tr>
+</div>
+<div class="tip">
+<p> 提示：参见设备底部 "默认配置账户/密码"</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></body>
+</html>
+<script>
+
+if ("325" != 300)
+{
+getObj("username").value = "user";
+}
+var UserStr = "user";
+
+getObj("errmsg").innerHTML = "您的错误登录次数已经达到三次，系统将延时进行校验。";
+
+getObj("myLayer").style.visibility = "hidden" ;
+
+SetDisabled();
+
+document.onkeyup = function(e)
+{
+var code = e.charCode || e.keyCode;
+if (code == 13)
+{
+dosubmit();
+}
+}
+function gotoRegister()
+{
+var region = "300"
+if (("1" == "1") && ("0" != region)){
+if("0" == "0"){
+if ("326" == region)
+{
+alert("智能网关已经注册，无需重新注册，如需注册，需进行恢复出厂设置，该操作可能导致业务异常，需谨慎使用");
+}
+else if ("304" == region)
+{
+var pwd = "3861738582";
+alert("已注册成功（LOID："+pwd+"），无需再注册");
+}
+else
+{
+alert("已注册成功，无需再注册。");
+}
+return;
+}
+}
+document.location.href="register.gch";
+}
+function SetDisabled()
+{
+getObj("errmsg").innerHTML = "您的错误登录次数已经达到三次，系统将延时进行校验。";
+getObj("username").disabled = true;
+getObj("logincode").disabled = true;
+getObj("LoginId").disabled = true;
+//getObj("reset").disabled = true;
+getObj("myLayer").style.visibility = "visible" ;
+getObj("time").style.display = "" ;
+interval = setInterval("setTime()",1000);
+}
+function setDisable()
+{
+if (SetTFlag == 1)
+{
+getObj("username").disabled = false;
+getObj("logincode").disabled = false;
+getObj("LoginId").disabled = false;
+//getObj("reset").disabled = false;
+getObj("time").style.display = "none";
+getObj("myLayer").style.visibility = "hidden";
+//getObj("login_msg_font").innerHTML = "";
+}
+}
+function encryptPassword(password)
+{
+var encrypt = new JSEncrypt();
+encrypt.setPublicKey("MIGdMA0GCSqGSIb3DQEBAQUAA4GLADCBhwKBgQDrQunyHq5EGzlc6GFZ+LJrvnZ5+Jd8ArqgR6xvuBTNtqbPDz1NfnMTuusny1etUUY3UUPckEH2SVClSxYZTuy9T5OXsUP+9CimcZ7ft/WuabcOkvw/WoAkzJwOySVUNxRDGhDTS59tZhQ11C42WIpdD+vDELH4OcQ7XrlLA/mHbwIBAw==");
+return encrypt.encrypt(password);
+}
+function dosubmit()
+{
+var version=getIEVersion();
+getObj("ieversion").value = version;
+getObj("LoginId").disabled = true;
+//getObj("reset").disabled = true;
+getObj("Frm_Logintoken").value = "0";
+//判断密码是不是被浏览器记住密码机制给修改了，如果是，则恢复回来
+var passInput = document.getElementById("logincode");
+var passInput2 = document.getElementById("usr2");
+passInput.setAttribute('name','logincode');
+if (!getDisplay("logincode")) {
+passInput.value = passInput2.value;
+}
+passInput2.value = encryptPassword(passInput2.value);
+passInput.value = encryptPassword(passInput.value);
+document.fLogin.submit();
+}
+function doreset()
+{
+var HostIPAddr = "192.168.1.1";
+HostIPAddr = "http:\/\/"+HostIPAddr+"\/";
+document.location.href=HostIPAddr;
+}
+function onFocus()
+{
+if( document.getElementById("logincode").disabled == false )
+{
+document.getElementById("logincode").focus();
+}
+}
+function showpassword()
+{
+var showpwd = document.getElementById("showpwd");
+var showpwdoff = document.getElementById("showpwdoff");
+var showpassword = document.getElementById("showpassword");
+var passInput = document.getElementById("logincode");
+var passInput2 = document.getElementById("usr2");
+if (showpwd.style.display == "block") {
+passInput.value = passInput2.value;
+passInput.style.display = "";
+passInput2.style.display = "none";
+showpwd.style.display = "none";
+showpwdoff.style.display = "block";
+}
+else {
+passInput2.value = passInput.value;
+passInput.style.display = "none";
+passInput2.style.display = "";
+showpwd.style.display = "block";
+showpwdoff.style.display = "none";
+}
+}
+function getIEVersion()
+{
+var userAgent = navigator.userAgent;
+var isOpera = userAgent.indexOf("Opera") > -1;
+var isIE = userAgent.indexOf("compatible") > -1 && userAgent.indexOf("MSIE") > -1 && !isOpera;
+var isEdge = userAgent.indexOf("Windows NT 6.1; Trident/7.0;") > -1 && !isIE;
+if(isIE)
+{
+var reIE = new RegExp("MSIE (\\d+\\.\\d+);");
+reIE.test(userAgent);
+var fIEVersion = parseFloat(RegExp["$1"]);
+if(fIEVersion == 7)
+{ return "0";}
+else if(fIEVersion == 8)
+{ return "0";}
+else if(fIEVersion == 9)
+{ return "0";}
+else if(fIEVersion == 10)
+{ return "0";}
+else if(fIEVersion == 11)
+{
+return "1";}
+else
+{ return "0"}
+}
+else if(isEdge)
+{
+return "1";
+}
+else
+{
+return "1";
+}
+}
+function getDisplay(id)
+{
+if(getObj(id).style.display == "none")
+return false;
+else
+return true;
+}
+</script>
+

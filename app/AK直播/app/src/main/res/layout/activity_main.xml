@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <VideoView
+        android:id="@+id/video"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center" />
+
+    <!-- 左侧频道面板 -->
+    <LinearLayout
+        android:id="@+id/panel"
+        android:layout_width="330dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="left|center_vertical"
+        android:background="#E6000000"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/group_name"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:background="#33FF9800"
+            android:gravity="center_vertical|left"
+            android:paddingLeft="14dp"
+            android:singleLine="true"
+            android:textColor="#FFCC80"
+            android:textSize="19sp" />
+
+        <ListView
+            android:id="@+id/chlist"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:choiceMode="singleChoice"
+            android:divider="#22FFFFFF"
+            android:dividerHeight="1dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:listSelector="#55FF9800"
+            android:scrollbars="none" />
+    </LinearLayout>
+
+    <!-- 设置面板 -->
+    <LinearLayout
+        android:id="@+id/setpanel"
+        android:layout_width="560dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="right|center_vertical"
+        android:background="#F21C1C1C"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="#FF9800"
+            android:gravity="center_vertical|left"
+            android:paddingLeft="18dp"
+            android:text="设置（左右键改值，返回键关闭）"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp" />
+
+        <ListView
+            android:id="@+id/setlist"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:choiceMode="singleChoice"
+            android:divider="#33FFFFFF"
+            android:dividerHeight="1dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:listSelector="#55FF9800"
+            android:scrollbars="none" />
+    </LinearLayout>
+
+    <!-- 底部状态条 -->
+    <TextView
+        android:id="@+id/status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|right"
+        android:layout_margin="18dp"
+        android:background="#B3000000"
+        android:padding="10dp"
+        android:textColor="#FFFFFF"
+        android:textSize="21sp" />
+
+</FrameLayout>

@@ -1,0 +1,6 @@
+#EXTM3U
+# 说明：这里原本是本机的真实直播源（含账号级 token，已脱敏移除）。
+# 请用 scripts/gen_live_m3u.py 按 docs/04-IPTV直播源逆向.md 的步骤生成你自己的。
+# 下面两行是公开示例，仅用于验证播放器能否加载列表：
+#EXTINF:-1 group-title="示例",示例频道
+http://example.com/stream.m3u8

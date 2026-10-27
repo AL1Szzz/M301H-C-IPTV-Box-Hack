@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 选中：亮底板 + 描边，遥控器移动时一眼可见 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#45FFFFFF" />
+    <stroke android:width="3dp" android:color="#FFFFFFFF" />
+    <corners android:radius="14dp" />
+    <padding android:left="8dp" android:top="8dp" android:right="8dp" android:bottom="8dp" />
+</shape>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_top">#0B0F1A</color>
+    <color name="bg_bottom">#16202F</color>
+    <color name="text_primary">#F2F6FF</color>
+    <color name="text_secondary">#9FB0C8</color>
+    <color name="focus_fill">#33FFFFFF</color>
+    <color name="focus_stroke">#BFE3FF</color>
+    <color name="frozen_overlay">#CC0B0F1A</color>
+</resources>

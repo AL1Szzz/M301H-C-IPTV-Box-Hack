@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:background="@drawable/bg_gradient">
+
+    <!-- 系统壁纸（拿不到就保持渐变背景） -->
+    <ImageView
+        android:id="@+id/wallpaper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:alpha="0.55"
+        android:contentDescription="@string/app_name" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:clipChildren="false"
+        android:paddingLeft="48dp"
+        android:paddingRight="48dp"
+        android:paddingTop="36dp"
+        android:paddingBottom="20dp">
+
+        <!-- 顶部：时钟 + 日期 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="20dp">
+
+            <TextView
+                android:id="@+id/clock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:00"
+                android:textColor="@color/text_primary"
+                android:textSize="52sp"
+                android:textStyle="bold"
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="2"
+                android:shadowRadius="6" />
+
+            <TextView
+                android:id="@+id/date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="@color/text_secondary"
+                android:textSize="17sp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- 应用网格 -->
+        <GridView
+            android:id="@+id/grid"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:numColumns="6"
+            android:verticalSpacing="18dp"
+            android:horizontalSpacing="10dp"
+            android:stretchMode="columnWidth"
+            android:gravity="center"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:listSelector="@android:color/transparent"
+            android:drawSelectorOnTop="false"
+            android:scrollbarStyle="outsideOverlay"
+            android:fadingEdge="none" />
+
+        <!-- 底部操作提示 -->
+        <TextView
+            android:id="@+id/hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginTop="6dp"
+            android:text="方向键选择  ·  确认键打开  ·  菜单键更多"
+            android:textColor="#7E8FA8"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+</FrameLayout>

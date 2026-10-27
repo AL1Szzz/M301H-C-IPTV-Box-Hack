@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Aerial TV 4</string>
+    <string name="acc_menu_desc">桌面切换器：在其他界面按菜单键切到 Aerial TV 4</string>
+    <string name="action_open">打开</string>
+    <string name="action_hide">从桌面隐藏</string>
+    <string name="action_freeze">锁住后台（冻结）</string>
+    <string name="action_unfreeze">解冻</string>
+    <string name="action_info">应用信息</string>
+    <string name="action_uninstall">卸载</string>
+    <string name="menu_manage_hidden">管理已隐藏的应用</string>
+    <string name="menu_unfreeze_all">解冻全部</string>
+    <string name="menu_columns">每行图标数</string>
+    <string name="menu_refresh">刷新</string>
+    <string name="menu_about">关于</string>
+    <string name="no_hidden">没有隐藏的应用</string>
+    <string name="done">完成</string>
+</resources>

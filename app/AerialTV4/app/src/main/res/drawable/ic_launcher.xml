@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 应用图标（用 shape 画，避免 4.4 不支持 vector / adaptive icon） -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient android:angle="270" android:startColor="#4A7FB5" android:endColor="#1B2739" />
+    <corners android:radius="18dp" />
+</shape>
