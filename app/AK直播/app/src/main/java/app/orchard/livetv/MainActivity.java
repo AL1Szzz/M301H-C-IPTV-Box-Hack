@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-/** AK直播：内置频道 + 遥控器优化 + 设置面板，全部使用 API 19 可用接口 */
+/** AK直播 1.2：内置频道 + 遥控器优化（左右换分组 / 菜单自动收起 / 数字键跳台）+ 设置面板 */
 public class MainActivity extends Activity {
 
     // ---- 视图 ----
@@ -62,6 +62,11 @@ public class MainActivity extends Activity {
     private SharedPreferences prefs;
     private List<Setting> settings = new ArrayList<Setting>();
     private SetAdapter setAdapter;
+
+    // ---- 交互状态 ----
+    private boolean suppressSel = false;   // 程序化 setSelection 时不要触发预览播放
+    private long lastHideAt = 0;           // 上一次收起菜单的时间（双击返回退出用）
+    private String numBuf = "";            // 数字键缓冲
 
     // 频道源：内置 / 自定义
     private static final String SRC_BUILTIN = "内置频道";
@@ -93,18 +98,16 @@ public class MainActivity extends Activity {
                 errCount = 0;
                 mp.setScreenOnWhilePlaying(true);
                 applyScale(mp.getVideoWidth(), mp.getVideoHeight());
-                Chan c = cur();
-                showStatus("正在播放：" + (c != null ? c.name : ""));
+                showStatus(chanLabel(sel, "正在播放"));
             }
         });
         video.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             public boolean onError(MediaPlayer mp, int what, int extra) {
-                Chan c = cur();
-                showStatus("× " + (c != null ? c.name : "") + " 无法播放（" + what + "）");
+                showStatus("× " + (cur() != null ? cur().name : "") + " 无法播放（" + what + "）");
                 if (prefs.getBoolean("autoskip", true)) {
                     errCount++;
                     if (errCount <= 5) {
-                        showStatus("× " + (c != null ? c.name : "") + " 失效，自动换下一个…");
+                        showStatus("× " + (cur() != null ? cur().name : "") + " 失效，自动换下一个…");
                         handler.postDelayed(new Runnable() {
                             public void run() {
                                 step(1);
@@ -119,7 +122,8 @@ public class MainActivity extends Activity {
         chList.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
                 sel = pos;
-                schedulePlay(pos);
+                // 只有在菜单展开、且是用户主动移动时才做"预览播放"
+                if (!suppressSel && panelVisible()) schedulePlay(pos);
             }
             public void onNothingSelected(AdapterView<?> p) {
             }
@@ -149,13 +153,38 @@ public class MainActivity extends Activity {
             }
         }
         buildGroups();
-        showGroup(0);
+        boolean restored = restoreLast();
+        if (!restored) showGroup(0);
         if (prefs.getBoolean("panel", true)) {
             showPanel();
         } else {
             hidePanel();
-            if (prefs.getBoolean("autoplay", true)) play(0);
+            if (prefs.getBoolean("autoplay", true) && shown.size() > 0) play(sel);
         }
+    }
+
+    /** 恢复到上次观看的频道 */
+    private boolean restoreLast() {
+        if (!prefs.getBoolean("remember", true)) return false;
+        String url = prefs.getString("lastUrl", "");
+        if (url.length() == 0) return false;
+        for (int i = 0; i < all.size(); i++) {
+            if (url.equals(all.get(i).url)) {
+                String g = all.get(i).group;
+                int gi = groups.indexOf(g);
+                if (gi < 0) return false;
+                showGroup(gi);
+                for (int j = 0; j < shown.size(); j++) {
+                    if (url.equals(shown.get(j).url)) {
+                        sel = j;
+                        setSelSilent(j);
+                        return true;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     private String loadAssetText() {
@@ -197,54 +226,11 @@ public class MainActivity extends Activity {
         return s.toString();
     }
 
+    /** 一遍解析：频道名 + group-title 分组 */
     private void parse(String text) {
         all.clear();
         if (text == null) return;
         String[] lines = text.split("\n");
-        String name = null;
-        for (String l : lines) {
-            l = l.trim();
-            if (l.startsWith("#EXTINF")) {
-                int i = l.indexOf(',');
-                name = (i >= 0) ? l.substring(i + 1).trim() : "未命名";
-                if (name.length() == 0) name = "未命名";
-            } else if (l.startsWith("http")) {
-                String g = "频道";
-                int gi = l.indexOf("group-title=");
-                all.add(new Chan(name == null ? ("频道" + (all.size() + 1)) : name, l, g));
-                name = null;
-            }
-        }
-        // 从 #EXTINF 里取分组（上面简化处理，这里再补一次精确解析）
-        name = null;
-        int idx = -1;
-        for (String l : lines) {
-            l = l.trim();
-            if (l.startsWith("#EXTINF")) {
-                int i = l.indexOf(',');
-                name = (i >= 0) ? l.substring(i + 1).trim() : "未命名";
-                int g1 = l.indexOf("group-title=\"");
-                if (g1 >= 0) {
-                    int g2 = l.indexOf('"', g1 + 13);
-                    if (g2 > g1) name = name + ""; // 保留显示名
-                    idx = -1;
-                    // 记录分组供下一条 URL 使用
-                }
-            } else if (l.startsWith("http")) {
-                idx++;
-                if (idx < all.size()) {
-                    int g1 = l.indexOf("group-title=");
-                    // 分组在上一行 EXTINF 中，回溯解析
-                }
-            }
-        }
-        // 精确解析分组：重新走一遍
-        parseGroups(text);
-    }
-
-    private void parseGroups(String text) {
-        String[] lines = text.split("\n");
-        int idx = -1;
         String name = null;
         String grp = null;
         for (String l : lines) {
@@ -252,18 +238,16 @@ public class MainActivity extends Activity {
             if (l.startsWith("#EXTINF")) {
                 int i = l.indexOf(',');
                 name = (i >= 0) ? l.substring(i + 1).trim() : "未命名";
-                int g1 = l.indexOf("group-title=\"");
+                if (name.length() == 0) name = "未命名";
                 grp = null;
+                int g1 = l.indexOf("group-title=\"");
                 if (g1 >= 0) {
                     int g2 = l.indexOf('"', g1 + 13);
                     if (g2 > g1) grp = l.substring(g1 + 13, g2);
                 }
             } else if (l.startsWith("http")) {
-                idx++;
-                if (idx < all.size()) {
-                    all.get(idx).name = (name == null ? all.get(idx).name : name);
-                    all.get(idx).group = (grp == null ? "频道" : grp);
-                }
+                all.add(new Chan(name == null ? ("频道" + (all.size() + 1)) : name,
+                        l, grp == null ? "频道" : grp));
                 name = null;
                 grp = null;
             }
@@ -291,11 +275,30 @@ public class MainActivity extends Activity {
         List<String> names = new ArrayList<String>();
         for (Chan c : shown) names.add(c.name);
         chList.setAdapter(new ArrayAdapter<String>(this, R.layout.item_channel, R.id.chan_name, names));
-        groupName.setText(g + "（" + shown.size() + "台）  ◀ ▶ 换分组");
         sel = 0;
-        if (shown.size() > 0) {
-            chList.setSelection(0);
+        if (shown.size() > 0) setSelSilent(0);
+        updateGroupTitle();
+    }
+
+    private void updateGroupTitle() {
+        if (groups.size() == 0) return;
+        int ah = autoHideMs();
+        String hint = (ah > 0) ? (" · " + (ah / 1000) + "秒收起") : "";
+        groupName.setText("分组 " + (groupIdx + 1) + "/" + groups.size()
+                + " · " + groups.get(groupIdx) + "（" + shown.size() + "台）  ◀ ▶ 换组" + hint);
+    }
+
+    /** 换分组：dir=1 下一个，-1 上一个。菜单展开时只换列表（预览第一台），全屏时直接播 */
+    private void switchGroup(int dir) {
+        if (groups.size() == 0) return;
+        showGroup(groupIdx + dir);
+        showStatus(groups.get(groupIdx) + "（" + shown.size() + "台）");
+        if (!panelVisible()) {
+            if (prefs.getBoolean("autoplay", true) && shown.size() > 0) play(0);
+        } else {
+            schedulePlay(0);
         }
+        resetAutoHide();
     }
 
     // ==================== 播放 ====================
@@ -303,6 +306,12 @@ public class MainActivity extends Activity {
     private Chan cur() {
         if (sel >= 0 && sel < shown.size()) return shown.get(sel);
         return null;
+    }
+
+    /** "5/12 频道名" 形式的提示 */
+    private String chanLabel(int pos, String prefix) {
+        if (pos < 0 || pos >= shown.size()) return prefix;
+        return prefix + " [" + (pos + 1) + "/" + shown.size() + "] " + shown.get(pos).name;
     }
 
     private void schedulePlay(int pos) {
@@ -328,7 +337,9 @@ public class MainActivity extends Activity {
         if (pos < 0 || pos >= shown.size()) return;
         sel = pos;
         Chan c = shown.get(pos);
-        showStatus("加载中：" + c.name);
+        handler.removeCallbacks(playTask);
+        showStatus(chanLabel(pos, "加载中"));
+        saveLast(c);
         try {
             video.stopPlayback();
             video.setVideoURI(Uri.parse(c.url));
@@ -338,15 +349,36 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** 换台：dir=1 下一个，-1 上一个 */
+    private void saveLast(Chan c) {
+        if (c == null) return;
+        SharedPreferences.Editor e = prefs.edit();
+        e.putString("lastUrl", c.url);
+        e.putString("lastGroup", c.group);
+        e.commit();
+    }
+
+    /** 换台：dir=1 下一个，-1 上一个（到头绕回） */
     private void step(int dir) {
         if (shown.size() == 0) return;
         int n = sel + dir;
         if (n < 0) n = shown.size() - 1;
         if (n >= shown.size()) n = 0;
         sel = n;
-        chList.setSelection(n);
+        setSelSilent(n);
         play(n);
+    }
+
+    /** 按偏移移动选中项（不绕回），用于翻页 */
+    private void moveSel(int delta) {
+        if (shown.size() == 0) return;
+        int n = sel + delta;
+        if (n < 0) n = 0;
+        if (n >= shown.size()) n = shown.size() - 1;
+        sel = n;
+        setSelSilent(n);
+        if (panelVisible()) schedulePlay(n);
+        else play(n);
+        resetAutoHide();
     }
 
     private void applyScale(int vw, int vh) {
@@ -377,16 +409,60 @@ public class MainActivity extends Activity {
 
     private void showPanel() {
         panel.setVisibility(View.VISIBLE);
+        updateGroupTitle();
+        if (shown.size() > 0) setSelSilent(sel);
         chList.requestFocus();
+        resetAutoHide();
     }
 
     private void hidePanel() {
         panel.setVisibility(View.GONE);
-        video.requestFocus();
+        handler.removeCallbacks(autoHideTask);
+        handler.removeCallbacks(playTask);
+        if (!settingsVisible()) video.requestFocus();
+        lastHideAt = System.currentTimeMillis();
     }
 
     private boolean panelVisible() {
         return panel.getVisibility() == View.VISIBLE;
+    }
+
+    /** 菜单自动收起时间（毫秒），0=不自动收起 */
+    private int autoHideMs() {
+        int v = prefs.getInt("autohide", 2);
+        if (v == 0) return 0;
+        if (v == 1) return 5000;
+        if (v == 3) return 20000;
+        return 10000;
+    }
+
+    private Runnable autoHideTask = new Runnable() {
+        public void run() {
+            if (panelVisible()) {
+                hidePanel();
+                showStatus("菜单已收起 · OK 键呼出，上下键换台");
+            }
+        }
+    };
+
+    /** 任何菜单内操作都重新计时 */
+    private void resetAutoHide() {
+        handler.removeCallbacks(autoHideTask);
+        int ms = autoHideMs();
+        if (ms > 0 && panelVisible() && !settingsVisible()) {
+            handler.postDelayed(autoHideTask, ms);
+        }
+    }
+
+    /** 只移动高亮，不触发预览播放 */
+    private void setSelSilent(int pos) {
+        suppressSel = true;
+        chList.setSelection(pos);
+        handler.post(new Runnable() {
+            public void run() {
+                suppressSel = false;
+            }
+        });
     }
 
     // ==================== 设置 ====================
@@ -398,10 +474,12 @@ public class MainActivity extends Activity {
         settings.add(new Setting("autoskip", "失效频道自动跳过", new String[]{"开", "关"}, 0, false));
         settings.add(new Setting("autoplay", "启动即播放", new String[]{"开", "关"}, 0, false));
         settings.add(new Setting("panel", "启动显示频道列表", new String[]{"开", "关"}, 0, false));
+        settings.add(new Setting("autohide", "菜单自动收起", new String[]{"关", "5 秒", "10 秒", "20 秒"}, 2, false));
+        settings.add(new Setting("remember", "记住上次频道", new String[]{"开", "关"}, 0, false));
         settings.add(new Setting("delay", "换台延迟", new String[]{"0.3秒", "0.7秒", "1.5秒"}, 1, false));
         settings.add(new Setting("scale", "画面缩放", new String[]{"全屏拉伸", "原始比例"}, 0, false));
         settings.add(new Setting("status", "显示状态提示", new String[]{"开", "关"}, 0, false));
-        settings.add(new Setting("about", "版本", new String[]{"AK直播 1.1"}, 0, false));
+        settings.add(new Setting("about", "版本", new String[]{"AK直播 1.2"}, 0, false));
 
         // 从 prefs 还原
         for (Setting s : settings) {
@@ -413,10 +491,14 @@ public class MainActivity extends Activity {
                 // 只读
             } else if ("status".equals(s.key)) {
                 s.idx = prefs.getBoolean("status", true) ? 0 : 1;
+            } else if ("remember".equals(s.key)) {
+                s.idx = prefs.getBoolean("remember", true) ? 0 : 1;
             } else if ("scale".equals(s.key)) {
                 s.idx = prefs.getInt("scale", 0);
             } else if ("delay".equals(s.key)) {
                 s.idx = prefs.getInt("delay", 1);
+            } else if ("autohide".equals(s.key)) {
+                s.idx = prefs.getInt("autohide", 2);
             } else {
                 s.idx = prefs.getBoolean(s.key, true) ? 0 : 1;
             }
@@ -425,6 +507,7 @@ public class MainActivity extends Activity {
     }
 
     private void openSettings() {
+        handler.removeCallbacks(autoHideTask);
         setPanel.setVisibility(View.VISIBLE);
         setAdapter.notifyDataSetChanged();
         setList.setSelection(0);
@@ -433,8 +516,12 @@ public class MainActivity extends Activity {
 
     private void closeSettings() {
         setPanel.setVisibility(View.GONE);
-        if (panelVisible()) chList.requestFocus();
-        else video.requestFocus();
+        if (panelVisible()) {
+            chList.requestFocus();
+            resetAutoHide();
+        } else {
+            video.requestFocus();
+        }
     }
 
     private boolean settingsVisible() {
@@ -459,10 +546,14 @@ public class MainActivity extends Activity {
             e.putString("source", s.opts[s.idx]);
         } else if ("status".equals(s.key)) {
             e.putBoolean("status", s.idx == 0);
+        } else if ("remember".equals(s.key)) {
+            e.putBoolean("remember", s.idx == 0);
         } else if ("scale".equals(s.key)) {
             e.putInt("scale", s.idx);
         } else if ("delay".equals(s.key)) {
             e.putInt("delay", s.idx);
+        } else if ("autohide".equals(s.key)) {
+            e.putInt("autohide", s.idx);
         } else if (s.opts != null && s.opts.length == 2 && "开".equals(s.opts[0])) {
             e.putBoolean(s.key, s.idx == 0);
         }
@@ -476,6 +567,9 @@ public class MainActivity extends Activity {
         } else if ("status".equals(s.key)) {
             if (s.idx == 1) status.setVisibility(View.GONE);
             else status.setVisibility(View.VISIBLE);
+        } else if ("autohide".equals(s.key)) {
+            updateGroupTitle();
+            resetAutoHide();
         } else if ("source".equals(s.key)) {
             if (s.idx == 0) {
                 parse(loadAssetText());
@@ -584,12 +678,44 @@ public class MainActivity extends Activity {
 
     // ==================== 遥控器 ====================
 
+    /** 数字键跳台：连续数字 1.2 秒内有效，跳到本分组第 n 台 */
+    private void onNumber(int digit) {
+        numBuf += String.valueOf(digit);
+        handler.removeCallbacks(numTask);
+        handler.postDelayed(numTask, 1200);
+        showStatus("跳转 " + numBuf + "…");
+    }
+
+    private Runnable numTask = new Runnable() {
+        public void run() {
+            if (numBuf.length() == 0) return;
+            int n;
+            try {
+                n = Integer.parseInt(numBuf);
+            } catch (Exception e) {
+                numBuf = "";
+                return;
+            }
+            numBuf = "";
+            if (n < 1) n = 1;
+            if (n > shown.size()) n = shown.size();
+            if (n <= 0) return;
+            int pos = n - 1;
+            sel = pos;
+            setSelSilent(pos);
+            if (panelVisible()) {
+                schedulePlay(pos);
+                resetAutoHide();
+            } else {
+                play(pos);
+            }
+        }
+    };
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        boolean settingsOpen = settingsVisible();
-
         // ---- 设置面板打开时 ----
-        if (settingsOpen) {
+        if (settingsVisible()) {
             switch (keyCode) {
                 case KeyEvent.KEYCODE_DPAD_LEFT:
                     changeSetting(-1);
@@ -609,6 +735,12 @@ public class MainActivity extends Activity {
             return super.onKeyDown(keyCode, event);
         }
 
+        // ---- 数字键（有数字键的遥控器可用）----
+        if (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9) {
+            onNumber(keyCode - KeyEvent.KEYCODE_0);
+            return true;
+        }
+
         switch (keyCode) {
             case KeyEvent.KEYCODE_MENU:
             case KeyEvent.KEYCODE_SETTINGS:
@@ -616,32 +748,57 @@ public class MainActivity extends Activity {
                 return true;
 
             case KeyEvent.KEYCODE_DPAD_UP:
-                if (!panelVisible()) step(-1);
-                return super.onKeyDown(keyCode, event);
+                if (panelVisible()) {
+                    resetAutoHide();
+                    // 到头绕回末尾
+                    if (chList.getSelectedItemPosition() <= 0 && shown.size() > 1) {
+                        sel = shown.size() - 1;
+                        setSelSilent(sel);
+                        schedulePlay(sel);
+                        return true;
+                    }
+                    return super.onKeyDown(keyCode, event);
+                }
+                step(-1);
+                return true;
 
             case KeyEvent.KEYCODE_DPAD_DOWN:
-                if (!panelVisible()) step(1);
-                return super.onKeyDown(keyCode, event);
+                if (panelVisible()) {
+                    resetAutoHide();
+                    // 到尾绕回头
+                    if (chList.getSelectedItemPosition() >= shown.size() - 1 && shown.size() > 1) {
+                        sel = 0;
+                        setSelSilent(0);
+                        schedulePlay(0);
+                        return true;
+                    }
+                    return super.onKeyDown(keyCode, event);
+                }
+                step(1);
+                return true;
 
             case KeyEvent.KEYCODE_DPAD_LEFT:
-                if (panelVisible()) {
-                    hidePanel();              // 收起列表，全屏看
-                } else {
-                    showGroup(groupIdx - 1);  // 全屏时左键换上一分组
-                    showStatus("分组：" + groups.get(groupIdx));
-                    if (prefs.getBoolean("autoplay", true) && shown.size() > 0) play(0);
-                }
+                switchGroup(-1);   // 菜单展开 / 全屏，左键都是上一分组
                 return true;
 
             case KeyEvent.KEYCODE_DPAD_RIGHT:
-                if (panelVisible()) {
-                    showGroup(groupIdx + 1);  // 列表展开时右键换分组
-                    showStatus("分组：" + groups.get(groupIdx));
-                } else {
-                    showGroup(groupIdx + 1);
-                    showStatus("分组：" + groups.get(groupIdx));
-                    if (prefs.getBoolean("autoplay", true) && shown.size() > 0) play(0);
-                }
+                switchGroup(1);    // 右键下一分组
+                return true;
+
+            // 遥控器 CH+ / CH-：直接上下换台
+            case KeyEvent.KEYCODE_CHANNEL_UP:
+                step(1);
+                return true;
+            case KeyEvent.KEYCODE_CHANNEL_DOWN:
+                step(-1);
+                return true;
+
+            // 翻页键：一次跳 8 台
+            case KeyEvent.KEYCODE_PAGE_UP:
+                moveSel(-8);
+                return true;
+            case KeyEvent.KEYCODE_PAGE_DOWN:
+                moveSel(8);
                 return true;
 
             case KeyEvent.KEYCODE_DPAD_CENTER:
@@ -656,12 +813,16 @@ public class MainActivity extends Activity {
 
             case KeyEvent.KEYCODE_BACK:
                 if (panelVisible()) {
-                    finish();
-                    return true;
-                } else {
-                    showPanel();
+                    hidePanel();
+                    showStatus("再按一次返回键退出");
                     return true;
                 }
+                if (System.currentTimeMillis() - lastHideAt < 2500) {
+                    finish();
+                    return true;
+                }
+                showPanel();
+                return true;
 
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
                 if (video.isPlaying()) video.pause();
@@ -672,9 +833,17 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onPause() {
+        handler.removeCallbacks(autoHideTask);
+        super.onPause();
+    }
+
+    @Override
     protected void onDestroy() {
         handler.removeCallbacks(playTask);
         handler.removeCallbacks(hideStatus);
+        handler.removeCallbacks(autoHideTask);
+        handler.removeCallbacks(numTask);
         super.onDestroy();
     }
 
